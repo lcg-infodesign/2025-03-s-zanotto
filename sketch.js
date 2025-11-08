@@ -10,7 +10,7 @@ function preload() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  textFont("Helvetica");
+  textFont("Futura");
 
   let allLat = [];
   let allLon = [];
@@ -48,11 +48,11 @@ function draw() {
   fill("white");
   textSize(24);
   textAlign(LEFT);
-  text("Volcanoes of the World: Status and Elevation", margin, margin - 5 - 12); // Nuovo titolo
+  text("VOLCANOES OF THE WORLD: Status and Elevation", margin, margin - 5 - 12); // Nuovo titolo
 
   // Area del Grafico (Contenitore)
   noFill();
-  stroke(100);
+  //stroke(100);
   rect(margin, margin, chartW - margin * 1.5, chartH - margin * 1.5);
   noStroke();
 
@@ -80,7 +80,6 @@ function draw() {
     let y = map(lat, minLat, maxLat, chartH - margin, margin);
     
     // 1. Mappa Altitudine alla Dimensione del Quadrato
-    // Dimensioni: Min 4, Max 20 (oppure Min 1, Max 15, a seconda di come si adatta)
     let size = map(elev, minElev, maxElev, 4, 20); 
     
     // 2. Determina il Colore in base allo Status
@@ -131,9 +130,10 @@ function draw() {
 }
 
 // Funzione per mostrare le informazioni dettagliate (simile al lavoro del tuo compagno, ma adattata)
+// INFO SINGOLO VULCANO
 function drawVolcanoInfo(row) {
     let infoX = chartW + 20;
-    let infoY = margin + 30;
+    let infoY = margin + 70;
 
     // Info vulcano
     let name = data.getString(row, "Volcano Name");
@@ -160,7 +160,7 @@ function drawVolcanoInfo(row) {
     text("Last Eruption: " + erup, infoX, infoY + 330);
 }
 
-// Funzione per la legenda
+// LEGENDA
 function drawLegend(activeCol, dormantCol, minE, maxE) {
   let legendX = chartW + 20;
   let legendY = margin + 30;
