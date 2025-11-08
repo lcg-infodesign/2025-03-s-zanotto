@@ -1,118 +1,176 @@
-// Margine esterno per non disegnare sui bordi del canvas
-let outerMargin = 100;
-
-// Variabile che conterrà i dati caricati dal CSV
-let data;
-
-// Variabili globali per i limiti delle scale
-let minLon, maxLon, minLat, maxLat, maxValue, minBlur, maxBlur;
+let data; 
+let categoryCounts = {}; // Oggetto per memorizzare i conteggi di ciascuna TypeCategory
+let categories = []; // Array per le etichette delle categorie
+let maxCount = 0; // Il conteggio massimo per scalare le barre
+let chartW, chartH;
+let margin = 70;
 
 function preload() {
-  // Carico il file CSV nella cartella "assets"
-  // Il terzo parametro ("header") indica che la prima riga del file contiene i nomi delle colonne
-  data = loadTable("assets/data.csv", "csv", "header");
+  data = loadTable("data.csv", "csv", "header");
 }
 
 function setup() {
-  // Crea un canvas che riempie tutta la finestra del browser
   createCanvas(windowWidth, windowHeight);
-
-  // Stampa i dati in console per verificarne il contenuto
-  console.log("data", data);
-
-  // --- DEFINIZIONE DELLE SCALE ---
-
-  // Scala per la longitudine → asse X
-  let allLon = data.getColumn("longitude");
-  minLon = min(allLon);
-  maxLon = max(allLon);
-
-  // Scala per la latitudine → asse Y
-  let allLat = data.getColumn("latitude");
-  minLat = min(allLat);
-  maxLat = max(allLat);
-
-  // Scala per il raggio → dipende dal valore numerico
-  let allValues = data.getColumn("value");
-  maxValue = max(allValues);
-
-  // Scala per il blur → dipende dal grado di incertezza
-  let allBlur = data.getColumn("uncertainty");
-  minBlur = min(allBlur);
-  maxBlur = max(allBlur);
+  textFont("Helvetica");
+  
+  chartW = width * 0.8;
+  chartH = height * 0.8;
+  
+  // 1. Contare le occorrenze di ciascuna TypeCategory
+  for (let i = 0; i < data.getRowCount(); i++) {
+    let category = data.getString(i, "TypeCategory");
+    if (category) {
+      if (category in categoryCounts) {
+        categoryCounts[category]++;
+      } else {
+        categoryCounts[category] = 1;
+      }
+    }
+  }
+  
+  // 2. Ottenere le categorie e il conteggio massimo
+  categories = Object.keys(categoryCounts);
+  for (let cat of categories) {
+    if (categoryCounts[cat] > maxCount) {
+      maxCount = categoryCounts[cat];
+    }
+  }
 }
 
 function draw() {
-  // Sfondo nero
   background(10);
+  
+  let chartX = margin;
+  let chartY = height - margin;
+  
+  // Titolo
+  fill("white");
+  textSize(24);
+  textAlign(LEFT);
+  text("Distribution of Volcanoes by Type Category", margin, margin - 15);
 
-  // Variabile per memorizzare il punto su cui il mouse passa sopra
-  let hovered = null;
-
-  // --- CICLO PRINCIPALE: disegna un cerchio per ogni riga del dataset ---
-  for (let rowNumber = 0; rowNumber < data.getRowCount(); rowNumber++) {
-    // Leggo i dati dalle colonne del CSV
-    let country = data.getString(rowNumber, "country");
-    let value = data.getNum(rowNumber, "value");
-    let lat = data.getNum(rowNumber, "latitude");
-    let lon = data.getNum(rowNumber, "longitude");
-    let uncertainty = data.getNum(rowNumber, "uncertainty");
-
-    // Converto le coordinate geografiche in coordinate del canvas
-    let x = map(lon, minLon, maxLon, outerMargin, width - outerMargin);
-    let y = map(lat, minLat, maxLat, height - outerMargin, outerMargin);
-
-    // Raggio proporzionale al valore
-    let radius = map(value, 0, maxValue, 5, 50);
-
-    // Blur proporzionale all’incertezza
-    let blur = map(uncertainty, minBlur, maxBlur, 0, 20);
-
-    // Calcolo la distanza dal mouse
-    let d = dist(mouseX, mouseY, x, y);
-
-    // Se il mouse è sopra il cerchio → cambia colore e salva i dati per il tooltip
-    if (d < radius / 2) {
-      hovered = { x: x, y: y, country: country, value: value };
-      drawSun(x, y, radius, blur, "red");
-    } else {
-      drawSun(x, y, radius, blur, "yellow");
-    }
-  }
-
-  // --- TOOLTIP ---
-  // metto il tooltip alla fine per essere sicuro che sia disegnato sopra a tutto
-  if (hovered) {
-    // Cambia il cursore in “mano” (interattivo)
-    cursor("pointer");
-
-    // Testo del tooltip: mostra paese e valore
-    let tooltipText = `${hovered.country}: ${hovered.value}`;
-    drawTooltip(hovered.x, hovered.y, tooltipText);
-  } else {
-    // Torna al cursore normale
-    cursor("default");
-  }
-}
-
-// Funzione per disegnare un “sole” sfocato (con blur variabile)
-function drawSun(x, y, radius, blur, color) {
+  // Linee degli assi
+  stroke(100);
+  line(chartX, chartY, chartX + chartW, chartY); // Asse X
+  line(chartX, chartY, chartX, chartY - chartH); // Asse Y
   noStroke();
 
-  // Applica un filtro di blur solo a questo elemento
-  drawingContext.filter = "blur(" + blur + "px)";
-  fill(color);
-  ellipse(x, y, radius, radius);
-
-  // Reset del filtro per i prossimi elementi
-  drawingContext.filter = "none";
+  let numCategories = categories.length;
+  let barWidth = (chartW - margin * 2) / numCategories;
+  
+  // Disegna le barre
+  for (let i = 0; i < numCategories; i++) {
+    let cat = categories[i];
+    let count = categoryCounts[cat];
+    
+    // Mappa il conteggio all'altezza del grafico (chartH)
+    let barHeight = map(count, 0, maxCount, 0, chartH - margin);
+    let x = chartX + i * barWidth + barWidth / 2;
+    let y = chartY - barHeight;
+    
+    let isHovering = mouseX > x - barWidth / 2 && mouseX < x + barWidth / 2 && mouseY > chartY - barHeight && mouseY < chartY;
+    
+    // Colore barra
+    let barColor = color(100, 150, 255); // Colore di base blu
+    if (isHovering) {
+      barColor = color(255, 100, 100); // Rosso all'hover
+    }
+    fill(barColor);
+    rect(x - barWidth / 2, y, barWidth, barHeight);
+    
+    // Etichette Asse X (Nomi Categoria)
+    push();
+    fill("white");
+    textSize(10);
+    textAlign(RIGHT);
+    translate(x - barWidth/2 + 5, chartY + 10);
+    rotate(PI/4); // Ruota l'etichetta per risparmiare spazio
+    text(cat, 0, 0);
+    pop();
+    
+    // Etichette Conteggio sopra la barra
+    if (isHovering) {
+        fill(255);
+        textAlign(CENTER);
+        textSize(12);
+        text(count, x, y - 5);
+    }
+  }
+  
+  // Disegna le tacche sull'Asse Y e i valori
+  drawYAxisLabels();
+  
+  // Informazioni hover (mostriamo tutti i vulcani di quella categoria)
+  if (mouseX > chartX && mouseX < chartX + chartW && mouseY > chartY - chartH && mouseY < chartY) {
+    let hoverIndex = floor((mouseX - chartX) / barWidth);
+    if (hoverIndex >= 0 && hoverIndex < numCategories) {
+      let hoveredCategory = categories[hoverIndex];
+      displayHoverInfo(hoveredCategory);
+    }
+  }
 }
 
-// Funzione per disegnare un tooltip vicino al mouse
-function drawTooltip(px, py, textString) {
-  textSize(16);
-  textAlign(LEFT, CENTER);
+function drawYAxisLabels() {
+  let chartX = margin;
+  let chartY = height - margin;
+  
+  // Numero di tacche (es. 5)
+  let numTicks = 5;
+  for (let i = 0; i <= numTicks; i++) {
+    let value = round(map(i, 0, numTicks, 0, maxCount));
+    let y = map(i, 0, numTicks, chartY, chartY - (chartH - margin));
+    
+    // Linea tacca
+    stroke(100);
+    line(chartX - 5, y, chartX + 5, y);
+    
+    // Testo valore
+    noStroke();
+    fill(100);
+    textAlign(RIGHT);
+    textSize(10);
+    text(value, chartX - 10, y + 4);
+  }
+  
+  // Etichetta Asse Y
   fill("white");
-  stroke("black");
-  text(textString, px, py);
+  textAlign(CENTER);
+  textSize(12);
+  text("Count", chartX, chartY - chartH + 10);
+}
+
+function displayHoverInfo(category) {
+  let infoX = width - 200;
+  let infoY = margin + 30;
+  
+  fill(0, 0, 0, 180);
+  rect(infoX - 10, infoY - 20, 210, 300); // Sfondo nero semitrasparente
+
+  fill(255);
+  textSize(14);
+  textAlign(LEFT);
+  text("Category: " + category, infoX, infoY);
+  
+  textSize(12);
+  let count = 0;
+  let yOffset = 0;
+  let displayLimit = 15; // Limita i nomi per non sovraccaricare
+  
+  // Titoli
+  text("First " + displayLimit + " Volcanoes:", infoX, infoY + 20);
+  
+  // Filtra e mostra i nomi dei vulcani di quella categoria
+  for (let i = 0; i < data.getRowCount() && count < displayLimit; i++) {
+    let rowCategory = data.getString(i, "TypeCategory");
+    if (rowCategory === category) {
+      let name = data.getString(i, "Volcano Name");
+      text("• " + name, infoX, infoY + 40 + yOffset);
+      yOffset += 15;
+      count++;
+    }
+  }
+  
+  if (categoryCounts[category] > displayLimit) {
+      text("...and " + (categoryCounts[category] - displayLimit) + " more.", infoX, infoY + 40 + yOffset);
+  }
 }
