@@ -45,16 +45,19 @@ function setup() {
 function draw() {
   background(10); // Sfondo scuro
 
-  fill("white");
-  textSize(24);
-  textAlign(LEFT);
-  text("VOLCANOES OF THE WORLD: Status and Elevation", margin, margin - 5 - 12); // Nuovo titolo
+  let titleY = margin; //nuova posizione y per il titolo
 
-  // Area del Grafico (Contenitore)
-  noFill();
-  //stroke(100);
-  rect(margin, margin, chartW - margin * 1.5, chartH - margin * 1.5);
-  noStroke();
+  fill(255, 190, 11);
+  textSize(38);
+  textStyle(BOLD);
+  textAlign(LEFT);
+  text("VOLCANOES OF THE WORLD: Status and Elevation", margin, titleY); 
+  textStyle(NORMAL);
+
+
+  let mapYOffset = titleY + 60; // Spazio aggiuntivo di 60 pixel dopo il titolo
+
+  noStroke(); // no contorno dei quadrati
 
   let closestDist = Infinity;
   let closestRow = null;
@@ -62,9 +65,9 @@ function draw() {
   let closestSize; // La dimensione del vulcano più vicino
 
   // Colori per lo Status
-  let activeColor = color(255, 69, 0, 200);   // Arancione/Rosso (Attivo/Historical/D1/D2/D3)
-  let dormantColor = color(0, 150, 255, 150); // Blu (Holocene/U)
-  let otherColor = color(200, 200, 200, 150);  // Grigio (Sconosciuto/Altro)
+  let activeColor = color(58, 134, 255, 200);   // 200 - Arancione/Rosso (Attivo/Historical/D1/D2/D3)
+  let dormantColor = color(255, 0, 110, 200); // 150 - Blu (Holocene/U)
+  let otherColor = color(200, 200, 200, 200);  // 150 - Grigio (Sconosciuto/Altro)
 
   // Ciclo per disegnare ogni vulcano
   for (let i = 0; i < data.getRowCount(); i++) {
@@ -77,7 +80,7 @@ function draw() {
 
     // Mappa Lat/Lon a coordinate X/Y
     let x = map(lon, minLon, maxLon, margin, chartW - margin);
-    let y = map(lat, minLat, maxLat, chartH - margin, margin);
+    let y = map(lat, minLat, maxLat, chartH - margin, mapYOffset);
     
     // 1. Mappa Altitudine alla Dimensione del Quadrato
     let size = map(elev, minElev, maxElev, 4, 20); 
@@ -112,10 +115,12 @@ function draw() {
     rect(x, y, size, size);
   }
 
+  
+
   // Hover Vulcano: evidenzia il quadrato e mostra le informazioni
   if (closestRow !== null) {
     // Evidenziazione: bordo giallo attorno al quadrato
-    stroke(255, 255, 0); 
+    stroke(255, 190, 11); //255, 255, 0
     strokeWeight(3);
     noFill();
     rect(closestX, closestY, closestSize + 5, closestSize + 5); 
@@ -129,11 +134,11 @@ function draw() {
   drawLegend(activeColor, dormantColor, minElev, maxElev);
 }
 
-// Funzione per mostrare le informazioni dettagliate (simile al lavoro del tuo compagno, ma adattata)
+// Funzione per mostrare le informazioni dettagliate
 // INFO SINGOLO VULCANO
 function drawVolcanoInfo(row) {
     let infoX = chartW + 20;
-    let infoY = margin + 70;
+    let infoY = margin + 130;
 
     // Info vulcano
     let name = data.getString(row, "Volcano Name");
@@ -146,7 +151,7 @@ function drawVolcanoInfo(row) {
     let lon = data.getString(row, "Longitude");
 
     // Testo vulcano
-    fill("white");
+    fill(255, 190, 11);
     textSize(16);
     textStyle(BOLD);
     text(name, infoX, infoY + 200);
@@ -163,38 +168,43 @@ function drawVolcanoInfo(row) {
 // LEGENDA
 function drawLegend(activeCol, dormantCol, minE, maxE) {
   let legendX = chartW + 20;
-  let legendY = margin + 30;
+  let legendY = margin + 100;
 
-  fill("white");
+  rectMode(CORNER);
+
+  fill(255, 190, 11);
   textSize(18);
   textStyle(BOLD);
-  text("Map Legend", legendX, legendY);
+  text("MAP LEGEND", legendX, legendY);
   textStyle(NORMAL);
   textSize(14);
   
   // 1. Legenda Colore (Status)
-  text("Color (Status)", legendX, legendY + 30);
+  text("COLOR (Status)", legendX, legendY + 30);
   
+  // ATTIVO
   fill(activeCol);
   rect(legendX, legendY + 45, 15, 15);
-  fill("white");
+  fill(255, 190, 11);
   text("Active / Historical", legendX + 25, legendY + 57);
   
+  // DORMIENTE
   fill(dormantCol);
   rect(legendX, legendY + 70, 15, 15);
-  fill("white");
+  fill(255, 190, 11);
   text("Dormant / Holocene", legendX + 25, legendY + 82);
+
   
   // 2. Legenda Dimensione (Elevation)
-  text("Size (Elevation in meters)", legendX, legendY + 120);
+  text("SIZE (Elevation in meters)", legendX, legendY + 120);
   
   fill(150);
   rect(legendX + 5, legendY + 140, 5, 5); // Piccolo
-  fill("white");
+  fill(255, 190, 11);
   text(nf(minE, 0, 0) + " m (Min)", legendX + 25, legendY + 145);
   
   fill(150);
   rect(legendX - 5, legendY + 175, 20, 20); // Grande
-  fill("white");
+  fill(255, 190, 11);
   text(nf(maxE, 0, 0) + " m (Max)", legendX + 25, legendY + 187);
 }
